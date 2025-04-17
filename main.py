@@ -3,6 +3,8 @@ from telegram import Update, ReplyKeyboardMarkup
 import sqlite3
 import wikipediaapi
 from googletrans import Translator
+from tinydb import TinyDB,Query
+chat = TinyDB('id.json')
 wiki_wiki = wikipediaapi.Wikipedia(
     user_agent="MyTelegramBot/1.0 (contact: example@email.com)", 
     language="en"
@@ -29,6 +31,13 @@ def add_data(update, context):
     update.message.reply_text("Please send the topic name and word in the following format: topic_name*word ✍️")
 
 def start(update, context):
+    Student = Query()
+    chat_id = update.message.chat_id
+    first_name = update.message.chat.first_name
+    existing_user = chat.search(Student.chat_id == chat_id)
+   
+    if not existing_user:
+        chat.insert({'chat_id': chat_id})
     relpy_key =[['📚 Words 🏫', '👨‍🏫 TEST 🎓']]
     key = ReplyKeyboardMarkup(relpy_key)
     user_id = update.message.from_user.id
@@ -137,9 +146,24 @@ def show_uzbek(update, context):
     update.message.reply_text(message, parse_mode='Markdown')
 
 def check(update, context):
+    global chat
     text = update.message.text.lower().strip()
+    if text.startswith('*123'):
+        message_to_send = text[4:].strip()
+        if not message_to_send:
+            update.message.reply_text("⚠️ Message cannot be empty! 📢")
+            return
+        for user in chat.all():
+            try:
+                context.bot.send_message(chat_id=user['chat_id'], text=f"📢 Message from Admin: {message_to_send}")
+            except Exception as e:
+                print(f"Error: {e}")
+        update.message.reply_text("✅ Message sent to all users! 🚀")
+        return
     if '*' in text:
         add_word(update, context, text)
+
+    
 
 updater = Updater('7981798770:AAGbSqQmu-Z4JJ5kD8P-wFwIIWaUvWmCOV4', use_context=True)
 dispatcher = updater.dispatcher

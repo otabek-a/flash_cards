@@ -7,6 +7,7 @@ from tinydb import TinyDB,Query
 import time
 import random
 chat = TinyDB('id.json')
+otash=TinyDB('topic.json')
 import requests
 wiki_wiki = wikipediaapi.Wikipedia(
     user_agent="MyTelegramBot/1.0 (contact: example@email.com)", 
@@ -158,9 +159,9 @@ def eng(update, context, text):
 
     cursor.execute(f"SELECT 1 FROM {table_name} WHERE topic = ?", (text,))
     result = cursor.fetchall()
-
+    otash.insert({'name':text})
     if len(result) >= 1:
-        update.message.reply_text(f"✅ I found this topic \"{text}\" with {len(result)} words\n🧪 Your test will begin! If you want to stop, please send me -- stop() 🛑")
+        update.message.reply_text(f"✅ I found this topic \"{text}\" with {len(result)} words\n🧪 Your test will begin! and pls send your answr sheet after answer word 🛑")
         for count in [5, 4, 3, 2, 1]:
             time.sleep(1)
             update.message.reply_text(f"⏳ {count}")
@@ -169,15 +170,15 @@ def eng(update, context, text):
         rows = cursor.fetchall()
         word_list = [i[0] for i in rows]
         i=1
-       
+        matn=f'             Topic {text}\n'
         while len(word_list) > 0:
               
              word = random.choice(word_list)
-             update.message.reply_text(f"Qustion:{i}, What does '{word}' mean in english?")
+             matn+=(f"Qustion:{i}, What does '{word}' mean in english? \n")
              word_list.remove(word)
              i+=1
-             time.sleep(10)
-        update.message.reply_text('Test is stopped')
+            
+        update.message.reply_text(matn)
         
     else:
         update.message.reply_text(f"⚠️ I cannot find this topic: {text} ❌")
@@ -187,7 +188,7 @@ def show_uzbek(update, context):
     cursor = conn.cursor()
     user_id = update.message.from_user.id
     table_name = 'a' + str(user_id)
-
+    
     cursor.execute(f"SELECT topic, word, uzbek FROM {table_name}")  
     rows = cursor.fetchall()
 
@@ -225,14 +226,59 @@ def delete_data(update,context,text):
     else:
         update.message.reply_text(f"⚠️ I cannot find this topic: {text} ❌")
 
+
+
+
+def show_result(text, update):
+    # Foydalanuvchidan kelgan matnni olish va tayyorlash
+    text = text.strip().lower()
+    user_id = update.message.from_user.id
+    table_name = 'a' + str(user_id)
+    conn = sqlite3.connect("students.db")
+    cursor = conn.cursor()
+
+    # Foydalanuvchidan oxirgi "name"ni olish
+    data = otash.all()
+    last_name = data[-1].get('name') if data else "Nomaʼlum"
+
+    # Ma'lumotlar bazasidan so'zlarni olish
+    cursor.execute(f"SELECT uzbek FROM {table_name} WHERE topic = ?", (last_name,))
+    rows = cursor.fetchall()
+    uzbek_words = [row[0] for row in rows] if rows else []
+    
+    # Foydalanuvchi kiritgan so'zlarni ajratish
+    user_words = text.replace('answer', '').strip(',').split(',')
+    
+    # To'g'ri va noto'g'ri javoblarni hisoblash
+    correct = 0
+    incorrect = 0
+    
+    
+    max_length = max(len(user_words), len(uzbek_words))
+    
+    for i in range(max_length):
+        # Agar i-chi element mavjud bo'lsa, mosligini tekshirish
+        user_word = user_words[i] if i < len(user_words) else None
+        uzbek_word = uzbek_words[i] if i < len(uzbek_words) else None
+        
+        if user_word and uzbek_word and user_word.strip().lower() == uzbek_word.strip().lower():
+            correct += 1  # Agar so'zlar teng bo'lsa
+        else:
+            incorrect += 1  # Agar so'zlar teng bo'lmasa
+    
+    update.message.reply_text(f"To'g'ri javoblar: {correct}, Noto'g'ri javoblar: {incorrect}")
+
 def check(update, context):
-    global chat
     text = update.message.text.lower().strip()
- 
-    if text.startswith('!'):
-        text=text.replace('!','')
-        delete_data(update,context,text)
-    if text.startswith('*123'):
+
+    if text.startswith('answer'):
+        context.user_data['last_answer'] = text
+
+    elif text.startswith('!'):
+        text = text.replace('!', '')
+        delete_data(update, context, text)
+
+    elif text.startswith('*123'):
         message_to_send = text[4:].strip()
         if not message_to_send:
             update.message.reply_text("⚠️ Message cannot be empty! 📢")
@@ -243,23 +289,30 @@ def check(update, context):
             except Exception as e:
                 print(f"Error: {e}")
         update.message.reply_text("✅ Message sent to all users! 🚀")
-        return
-    if text.startswith('#'):
+
+    elif text.startswith('#'):
         parts = text[1:].split('/')
         if len(parts) == 2:
             lang, topic = parts
             if lang == 'eng':
                 eng(update, context, topic)
-    
-    if '*' in text:
+
+    elif '*' in text:
         add_word(update, context, text)
-  
+
+def show(update, context):
+    last_answer = context.user_data.get('last_answer')
+    if last_answer:
+        result = show_result(last_answer,update)
+        
+    else:
+        update.message.reply_text("Hech qanday 'answer' topilmadi.")
 
 updater = Updater('7981798770:AAGbSqQmu-Z4JJ5kD8P-wFwIIWaUvWmCOV4', use_context=True)
 dispatcher = updater.dispatcher
 
 
-
+dispatcher.add_handler(MessageHandler(Filters.text( '📊 Show Result 📈'), show))
 dispatcher.add_handler(CommandHandler('start', start))
 dispatcher.add_handler(MessageHandler(Filters.text('📚 Words 🏫'), words))
 dispatcher.add_handler(MessageHandler(Filters.text('👨‍🏫 TEST 🎓'), test))

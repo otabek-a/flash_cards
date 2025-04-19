@@ -164,7 +164,7 @@ def eng(update, context, text):
             time.sleep(1)
             update.message.reply_text(f"⏳ {count}")
         update.message.reply_text(f"🚀 Starting test for '{text}'! 💥")
-        cursor.execute(f"SELECT word FROM {table_name} WHERE topic = ?", (text,))
+        cursor.execute(f"SELECT uzbek FROM {table_name} WHERE topic = ?", (text,))
         rows = cursor.fetchall()
         word_list = [i[0] for i in rows]
         i = 1
@@ -224,7 +224,7 @@ def show_result(text, update):
     cursor = conn.cursor()
     data = otash.all()
     last_name = data[-1].get('name') if data else "unknown"
-    cursor.execute(f"SELECT uzbek FROM {table_name} WHERE topic = ?", (last_name,))
+    cursor.execute(f"SELECT word FROM {table_name} WHERE topic = ?", (last_name,))
     rows = cursor.fetchall()
     uzbek_words = [row[0] for row in rows] if rows else []
     user_words = text.replace('answer', '').strip(',').split(',')

@@ -286,7 +286,7 @@ def show(update, context):
     else:
         update.message.reply_text("❗ No 'answer' found yet.")
 
-updater = Updater('7981798770:AAGbSqQmu-Z4JJ5kD8P-wFwIIWaUvWmCOV4', use_context=True)
+updater = Updater('7729690880:AAE_6-GluMZt4YMa6VxS6Lqn-dVAfqmuBns', use_context=True)
 dispatcher = updater.dispatcher
 dispatcher.add_handler(CommandHandler('help', help_data))
 dispatcher.add_handler(MessageHandler(Filters.text('📊 Show Result 📈'), show))

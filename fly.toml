@@ -1,0 +1,24 @@
+app = "my-telegram"  # You can change this to your app name
+
+kill_signal = "SIGINT"
+kill_timeout = 5
+processes = []
+
+[env]
+  # Optional: You can set environment variables here
+  # Example: TELEGRAM_TOKEN = "your_token"
+
+[experimental]
+  auto_rollback = true
+
+[[services]]
+  internal_port = 8080
+  protocol = "tcp"
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
